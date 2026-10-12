@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core-Banking EOD & Ledger Reconciliation</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --border-color: #1f2937;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+
+        .card-custom {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .metric-box {
+            background-color: #161e2e;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .table {
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .table-dark {
+            background-color: transparent;
+        }
+
+        .form-control {
+            background-color: #0b0f19;
+            border-color: #374151;
+            color: var(--text-primary);
+        }
+
+        .form-control:focus {
+            background-color: #0b0f19;
+            border-color: #3b82f6;
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        .badge-credit { background-color: #065f46; color: #34d399; }
+        .badge-debit { background-color: #78350f; color: #fbbf24; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid">
+
+        <!-- 1. GENEL BANKA GÜN SONU (EOD) MUTABAKATI -->
+        <div class="card-custom mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="text-light m-0"><i class="bi bi-file-earmark-text me-2"></i>GENEL BANKA GÜN SONU (EOD) MUTABAKATI</h5>
+                <div id="eodStatusBadge"></div>
+            </div>
+
+            <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">İŞ GÜNÜ</div>
+                        <div id="lblBusDate" class="metric-value text-info">2026-09-18</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">AÇILIŞ BAKİYESİ</div>
+                        <div id="lblOpenBal" class="metric-value">0,00 ₺</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">(+) TOPLAM CREDIT</div>
+                        <div id="lblTotCredit" class="metric-value text-success">0,00 ₺</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">(-) TOPLAM DEBIT</div>
+                        <div id="lblTotDebit" class="metric-value text-warning">0,00 ₺</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">(=) TEORİK KAPANIS</div>
+                        <div id="lblTheoClose" class="metric-value text-info">0,00 ₺</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-box">
+                        <div class="metric-title">MUTABAKAT FARKI</div>
+                        <div id="lblDiscrepancy" class="metric-value">0,00 ₺</div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-muted small text-center" id="lblInfoMeta">İşlem Bekleniyor...</div>
+        </div>
+
+        <!-- 2. BİREYSEL MÜŞTERİ MUTABAKATI & HAREKET İNCELEME -->
+        <div class="card-custom">
+            <h5 class="text-light mb-3"><i class="bi bi-search me-2 text-primary"></i>Bireysel Müşteri Mutabakatı & Hareket İnceleme</h5>
+            
+            <div class="row g-2 mb-4">
+                <div class="col-md-4">
+                    <input type="text" id="txtQuery" class="form-control" placeholder="Müşteri ID veya İsim (örn: CUST_00001)">
+                </div>
+                <div class="col-md-auto">
+                    <button class="btn btn-primary px-4" onclick="searchCustomer()">Müşteri Getir</button>
+                    <button class="btn btn-outline-light ms-2" onclick="randomCustomer()">Rastgele Seç</button>
+                </div>
+            </div>
+
+            <!-- Seçilen Müşteri Özet Kartı -->
+            <div id="customerSummaryBox" class="p-3 mb-4 rounded" style="background-color: #161e2e; border: 1px solid #2d3748; display:none;">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="text-secondary small">MÜŞTERİ</div>
+                        <h5 id="cName" class="text-info fw-bold mb-0">--</h5>
+                        <small id="cMeta" class="text-muted">--</small>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-secondary small">AÇILIŞ BAKİYESİ</div>
+                        <h6 id="cInitBal" class="fw-bold mb-0">0,00</h6>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-secondary small">(+) TOPLAM YATAN</div>
+                        <h6 id="cCredit" class="text-success fw-bold mb-0">0,00</h6>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-secondary small">(-) TOPLAM ÇEKİLEN</div>
+                        <h6 id="cDebit" class="text-warning fw-bold mb-0">0,00</h6>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <div class="text-secondary small">GÜNCEL FİİLİ BAKİYE</div>
+                        <h4 id="cCurBal" class="text-warning fw-bold mb-1">0,00 ₺</h4>
+                        <div id="cStatusBadge"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İşlem Tablosu -->
+            <div class="table-responsive">
+                <table class="table table-dark table-striped align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary">
+                            <th>TARİH</th>
+                            <th>İŞLEM ID</th>
+                            <th>AÇIKLAMA</th>
+                            <th>İŞLEM TİPİ</th>
+                            <th>TUTAR</th>
+                            <th>DURUM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txTableBody">
+                        <tr><td colspan="6" class="text-center text-muted py-3">Lütfen yukarıdan bir müşteri sorgulayın.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scriptler -->
+    <script>
+        async function fetchEodMetrics() {
+            try {
+                let res = await fetch('/api/live-reconciliation');
+                let data = await res.json();
+                
+                document.getElementById('lblOpenBal').innerText = data.openingBalance.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                document.getElementById('lblTotCredit').innerText = '+' + data.totalCredit.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                document.getElementById('lblTotDebit').innerText = '-' + data.totalDebit.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                document.getElementById('lblTheoClose').innerText = data.theoreticalBalance.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                document.getElementById('lblDiscrepancy').innerText = data.discrepancy.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+                
+                let badge = document.getElementById('eodStatusBadge');
+                if(data.isReconciled) {
+                    badge.innerHTML = '<span class="badge bg-success px-3 py-2">✓ SETTLEMENT SUCCESS (KASA %100 DENK)</span>';
+                } else {
+                    badge.innerHTML = '<span class="badge bg-danger px-3 py-2">⚠ KASA UYUMSUZLUĞU VAR</span>';
+                }
+                
+                document.getElementById('lblInfoMeta').innerText = `İşlem Tamamlandı: ${new Date().toLocaleTimeString()} | Denetlenen Kayıt: ${data.totalTx.toLocaleString()}`;
+            } catch (err) { console.error(err); }
+        }
+
+        async function randomCustomer() {
+            let res = await fetch('/api/random-customer');
+            if(res.ok) {
+                let data = await res.json();
+                document.getElementById('txtQuery').value = data.customerName;
+                searchCustomer();
+            }
+        }
+
+        async function searchCustomer() {
+            let q = document.getElementById('txtQuery').value;
+            if(!q) return;
+            let res = await fetch(`/api/customer-statement?customerQuery=${encodeURIComponent(q)}`);
+            if(!res.ok) { 
+                alert('Müşteri bulunamadı!'); 
+                return; 
+            }
+            let d = await res.json();
+            
+            document.getElementById('customerSummaryBox').style.display = 'block';
+            document.getElementById('cName').innerText = d.customerName;
+            document.getElementById('cMeta').innerText = `${d.customerId} (${d.totalTxCount} işlem)`;
+            document.getElementById('cInitBal').innerText = d.initialBalance.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+            document.getElementById('cCredit').innerText = '+' + d.totalCredit.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+            document.getElementById('cDebit').innerText = '-' + d.totalDebit.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+            document.getElementById('cCurBal').innerText = d.currentBalance.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ₺';
+
+            let cBadge = document.getElementById('cStatusBadge');
+            if(d.isReconciled) {
+                cBadge.innerHTML = '<span class="badge bg-success text-dark fw-bold px-2 py-1">✓ Bireysel Hesap Denk</span>';
+            } else {
+                cBadge.innerHTML = '<span class="badge bg-danger text-light fw-bold px-2 py-1">⚠ Hesap Uyumsuz</span>';
+            }
+
+            let tbody = document.getElementById('txTableBody');
+            tbody.innerHTML = '';
+            
+            if(d.transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Bu müşteriye ait işlem bulunamadı.</td></tr>';
+                return;
+            }
+
+            d.transactions.forEach(t => {
+                let typeBadge = t.transactionType === 'CREDIT' 
+                    ? '<span class="badge badge-credit px-2 py-1">GİRİŞ (CREDIT)</span>' 
+                    : '<span class="badge badge-debit px-2 py-1">ÇIKIŞ (DEBIT)</span>';
+                
+                tbody.innerHTML += `<tr>
+                    <td>${t.createdAt}</td>
+                    <td><span class="text-info font-monospace">${t.txId.substring(0, 16)}...</span></td>
+                    <td>${t.description}</td>
+                    <td>${typeBadge}</td>
+                    <td class="fw-bold ${t.transactionType === 'CREDIT' ? 'text-success':'text-warning'}">${t.amount.toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</td>
+                    <td class="text-success">✓ ONAYLANDI</td>
+                </tr>`;
+            });
+        }
+
+        setInterval(fetchEodMetrics, 1500);
+        fetchEodMetrics();
+    </script>
+</body>
+</html>

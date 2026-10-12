@@ -1,0 +1,108 @@
+# ===================================================================
+# Core-Banking Ledger Platform - .gitignore
+# ===================================================================
+
+# -------------------------------------------------------------------
+# 1. HASSAS BİLGİLER, ŞİFRELER VE ORTAM DEĞİŞKENLERİ (SECRETS)
+# -------------------------------------------------------------------
+# Ortam değişkeni (.env) dosyaları asla commit edilmemelidir
+*.env
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Yalnızca örnek şablon dosyasının takip edilmesine izin ver
+!.env.example
+
+# .NET Ortam / Yapılandırma Dosyaları (Şifre ve Connection String içerebilir)
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Example.json
+
+# .NET User Secrets
+**/secrets.json
+**/UserSecrets/
+
+# Özel Anahtarlar, Sertifikalar ve Kimlik Bilgileri
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.der
+*.kdbx
+id_rsa*
+*.credentials
+*.secret
+*password*
+!*.md
+
+# -------------------------------------------------------------------
+# 2. .NET / C# DERLEME VE ÇIKTI DOSYALARI (BUILD ARTIFACTS)
+# -------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+*.tmp
+*.temp
+
+# MSBuild / Nuget
+project.lock.json
+project.assets.json
+*.nuget.props
+*.nuget.targets
+
+# -------------------------------------------------------------------
+# 3. GELİŞTİRİCİ ARAÇLARI VE IDE DOSYALARI
+# -------------------------------------------------------------------
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# -------------------------------------------------------------------
+# 4. VERİTABANI VE YEREL VERİ DEPOLAMA
+# -------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.dmp
+oradata/
+ledger_oracle_data/
+
+# -------------------------------------------------------------------
+# 5. İŞLETİM SİSTEMİ KALINTILARI
+# -------------------------------------------------------------------
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
